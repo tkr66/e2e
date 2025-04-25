@@ -13,18 +13,18 @@ pub struct E2eYaml {
 
 #[derive(Debug, Deserialize)]
 pub struct Driver {
-    host: String,
-    port: String,
+    pub host: String,
+    pub port: String,
     pub headless: bool,
     pub window: Window,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct Window {
-    x: i32,
-    y: i32,
-    width: i32,
-    pub height: i32,
+    pub x: i64,
+    pub y: i64,
+    pub width: u32,
+    pub height: u32,
 }
 
 #[derive(Debug, Deserialize)]
