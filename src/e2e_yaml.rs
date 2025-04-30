@@ -2,8 +2,8 @@ use std::fs::File;
 use std::io::Read;
 use std::path::Path;
 
+use indexmap::IndexMap;
 use serde::Deserialize;
-use std::collections::HashMap;
 
 #[derive(Debug, Deserialize)]
 pub struct E2eYaml {
@@ -28,7 +28,7 @@ pub struct Window {
 }
 
 #[derive(Debug, Deserialize)]
-pub struct Scenarios(pub HashMap<String, Scenario>);
+pub struct Scenarios(pub IndexMap<String, Scenario>);
 
 #[derive(Debug, Deserialize)]
 pub struct Scenario {
