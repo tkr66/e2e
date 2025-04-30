@@ -1,5 +1,8 @@
+use std::time::Duration;
 use std::{env::args, path::Path};
 
+use thirtyfour::error::WebDriverError;
+use thirtyfour::extensions::query::*;
 use thirtyfour::{By, ChromiumLikeCapabilities, DesiredCapabilities, WebDriver};
 
 mod args;
@@ -40,6 +43,26 @@ async fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
                 }
                 e2e_yaml::Step::ScreenShot(file_name) => {
                     driver.screenshot(Path::new(file_name)).await?
+                }
+                e2e_yaml::Step::WaitDisplayed {
+                    selector,
+                    timeout,
+                    interval,
+                } => {
+                    let elem = driver
+                        .query(By::Css(selector))
+                        .wait(
+                            Duration::from_millis(*timeout),
+                            Duration::from_millis(*interval),
+                        )
+                        .single()
+                        .await?;
+                    elem.wait_until().displayed().await.map_err(|e| {
+                        WebDriverError::Timeout(format!("selector: {}, {}", selector, e))
+                    })?;
+                }
+                e2e_yaml::Step::AcceptAlert => {
+                    driver.accept_alert().await?;
                 }
             }
         }

@@ -47,6 +47,12 @@ pub enum Step {
         value: String,
     },
     ScreenShot(String),
+    WaitDisplayed {
+        selector: String,
+        timeout: u64,
+        interval: u64,
+    },
+    AcceptAlert,
 }
 
 pub fn load_e2e_yaml_from_file<P: AsRef<Path>>(
