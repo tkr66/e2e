@@ -42,7 +42,10 @@ pub enum Step {
     Goto(String),
     Click(String),
     Focus(String),
-    SendKeys { selector: String, value: String },
+    SendKeys {
+        selector: String,
+        value: String,
+    },
     ScreenShot(String),
 }
 
