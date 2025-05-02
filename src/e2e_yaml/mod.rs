@@ -5,13 +5,16 @@ use std::path::Path;
 use indexmap::IndexMap;
 use serde::Deserialize;
 use step::Step;
+use task::Tasks;
 
 pub mod step;
+pub mod task;
 
 #[derive(Debug, Deserialize)]
 pub struct E2eYaml {
     pub driver: Driver,
     pub vars: Vars,
+    pub tasks: Tasks,
     pub scenarios: Scenarios,
 }
 
@@ -55,6 +58,8 @@ pub fn load_e2e_yaml_from_file<P: AsRef<Path>>(
 
 #[cfg(test)]
 mod tests {
+    use task::Task;
+
     use super::*;
 
     #[test]
@@ -78,6 +83,21 @@ vars:
   timeout: 3000
   inteval: 500
 
+tasks:
+  login:
+    arg_names:
+      - name
+      - password
+    steps:
+      - !goto '{root}/enwiki/wiki/Special:UserLogin'
+      - !send_keys { selector: '#wpName1', value: '{name}' }
+      - !send_keys { selector: '#wpPassword', value: '{password}' }
+      - !click '#wpLoginAttempt'
+
+  login2:
+    steps:
+      - !goto 'a'
+
 scenarios:
   scenario1:
     name: index
@@ -88,6 +108,7 @@ scenarios:
       - !send_keys { selector: 'input#searchInput', value: '{word}' }
       - !screen_shot '{img_out}/img0.png'
       - !wait_displayed { selector: '{css}', timeout: 3000, interval: 1000 }
+      - !task_run { id: login, args: [ 'admin', 'password' ] }
         ";
 
         let v: E2eYaml = serde_yaml::from_str(yaml).unwrap();
@@ -109,6 +130,34 @@ scenarios:
             v.vars.0.get_full("img_out")
         );
 
+        let t1 = v.tasks.0.get("login").unwrap();
+        let t2 = v.tasks.0.get("login2").unwrap();
+        assert_eq!(
+            Task {
+                arg_names: Some(vec!["name".to_string(), "password".to_string()]),
+                steps: vec![
+                    Step::Goto("{root}/enwiki/wiki/Special:UserLogin".to_string()),
+                    Step::SendKeys {
+                        selector: "#wpName1".to_string(),
+                        value: "{name}".to_string()
+                    },
+                    Step::SendKeys {
+                        selector: "#wpPassword".to_string(),
+                        value: "{password}".to_string()
+                    },
+                    Step::Click("#wpLoginAttempt".to_string()),
+                ]
+            },
+            *t1
+        );
+        assert_eq!(
+            Task {
+                arg_names: None,
+                steps: vec![Step::Goto("a".to_string()),]
+            },
+            *t2
+        );
+
         let scenario1 = v.scenarios.0.get("scenario1").unwrap();
         let steps: Vec<Step> = scenario1
             .steps
@@ -121,6 +170,7 @@ scenarios:
         let s4 = steps.get(3).unwrap();
         let s5 = steps.get(4).unwrap();
         let s6 = steps.get(5).unwrap();
+        let s7 = steps.get(6).unwrap();
         assert_eq!(
             Step::Goto("https://en.wikipedia.org/wiki/Main_Page".to_string()),
             *s1
@@ -145,6 +195,13 @@ scenarios:
                 interval: 1000,
             },
             *s6
+        );
+        assert_eq!(
+            Step::TaskRun {
+                id: "login".to_string(),
+                args: Some(vec!["admin".to_string(), "password".to_string()]),
+            },
+            *s7
         );
     }
 }

@@ -30,7 +30,7 @@ async fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
             .map(|s| s.expand_vars(&e2e_yaml.vars))
             .collect();
         for step in &steps {
-            step.run(&driver).await?;
+            step.run(&driver, &e2e_yaml).await?;
         }
     }
 
