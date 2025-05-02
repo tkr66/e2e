@@ -39,6 +39,7 @@ async fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
                 }
                 e2e_yaml::Step::SendKeys { selector, value } => {
                     let elem = driver.find(By::Css(selector)).await?;
+                    elem.clear().await?;
                     elem.send_keys(value).await?;
                 }
                 e2e_yaml::Step::ScreenShot(file_name) => {
