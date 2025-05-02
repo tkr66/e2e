@@ -27,7 +27,12 @@ async fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
 
     for scenario in e2e_yaml.scenarios.0.values() {
         println!("running {}", scenario.name);
-        for step in &scenario.steps {
+        let steps: Vec<e2e_yaml::Step> = scenario
+            .steps
+            .iter()
+            .map(|s| s.expand_vars(&e2e_yaml.vars))
+            .collect();
+        for step in &steps {
             match step {
                 e2e_yaml::Step::Goto(url) => driver.goto(url).await?,
                 e2e_yaml::Step::Click(selector) => {
