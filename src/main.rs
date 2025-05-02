@@ -1,3 +1,4 @@
+use std::fs;
 use std::time::Duration;
 use std::{env::args, path::Path};
 
@@ -43,6 +44,12 @@ async fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
                     elem.send_keys(value).await?;
                 }
                 e2e_yaml::Step::ScreenShot(file_name) => {
+                    let p = Path::new(file_name);
+                    if let Some(dir) = p.parent() {
+                        if !dir.exists() {
+                            fs::create_dir_all(dir)?;
+                        }
+                    }
                     driver.screenshot(Path::new(file_name)).await?
                 }
                 e2e_yaml::Step::WaitDisplayed {
