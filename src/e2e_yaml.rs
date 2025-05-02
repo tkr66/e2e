@@ -1,9 +1,13 @@
-use std::fs::File;
+use std::fs::{self, File};
 use std::io::Read;
 use std::path::Path;
+use std::time::Duration;
 
 use indexmap::IndexMap;
 use serde::Deserialize;
+use thirtyfour::error::WebDriverError;
+use thirtyfour::extensions::query::*;
+use thirtyfour::By;
 
 #[derive(Debug, Deserialize)]
 pub struct E2eYaml {
@@ -125,6 +129,58 @@ impl Step {
             }
             Step::AcceptAlert => Step::AcceptAlert,
         }
+    }
+
+    pub async fn run(
+        &self,
+        driver: &thirtyfour::WebDriver,
+    ) -> Result<(), thirtyfour::error::WebDriverError> {
+        match self {
+            Step::Goto(url) => driver.goto(url).await?,
+            Step::Click(selector) => {
+                let elem = driver.find(By::Css(selector)).await?;
+                elem.click().await?;
+            }
+            Step::Focus(selector) => {
+                let elem = driver.find(By::Css(selector)).await?;
+                elem.focus().await?;
+            }
+            Step::SendKeys { selector, value } => {
+                let elem = driver.find(By::Css(selector)).await?;
+                elem.clear().await?;
+                elem.send_keys(value).await?;
+            }
+            Step::ScreenShot(file_name) => {
+                let p = Path::new(file_name);
+                if let Some(dir) = p.parent() {
+                    if !dir.exists() {
+                        fs::create_dir_all(dir)?;
+                    }
+                }
+                driver.screenshot(Path::new(file_name)).await?
+            }
+            Step::WaitDisplayed {
+                selector,
+                timeout,
+                interval,
+            } => {
+                let elem = driver
+                    .query(By::Css(selector))
+                    .wait(
+                        Duration::from_millis(*timeout),
+                        Duration::from_millis(*interval),
+                    )
+                    .single()
+                    .await?;
+                elem.wait_until().displayed().await.map_err(|e| {
+                    WebDriverError::Timeout(format!("selector: {}, {}", selector, e))
+                })?;
+            }
+            Step::AcceptAlert => {
+                driver.accept_alert().await?;
+            }
+        }
+        Ok(())
     }
 }
 

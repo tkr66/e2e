@@ -1,10 +1,6 @@
-use std::fs;
-use std::time::Duration;
-use std::{env::args, path::Path};
+use std::env::args;
 
-use thirtyfour::error::WebDriverError;
-use thirtyfour::extensions::query::*;
-use thirtyfour::{By, ChromiumLikeCapabilities, DesiredCapabilities, WebDriver};
+use thirtyfour::{ChromiumLikeCapabilities, DesiredCapabilities, WebDriver};
 
 mod args;
 mod e2e_yaml;
@@ -33,51 +29,7 @@ async fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
             .map(|s| s.expand_vars(&e2e_yaml.vars))
             .collect();
         for step in &steps {
-            match step {
-                e2e_yaml::Step::Goto(url) => driver.goto(url).await?,
-                e2e_yaml::Step::Click(selector) => {
-                    let elem = driver.find(By::Css(selector)).await?;
-                    elem.click().await?;
-                }
-                e2e_yaml::Step::Focus(selector) => {
-                    let elem = driver.find(By::Css(selector)).await?;
-                    elem.focus().await?;
-                }
-                e2e_yaml::Step::SendKeys { selector, value } => {
-                    let elem = driver.find(By::Css(selector)).await?;
-                    elem.clear().await?;
-                    elem.send_keys(value).await?;
-                }
-                e2e_yaml::Step::ScreenShot(file_name) => {
-                    let p = Path::new(file_name);
-                    if let Some(dir) = p.parent() {
-                        if !dir.exists() {
-                            fs::create_dir_all(dir)?;
-                        }
-                    }
-                    driver.screenshot(Path::new(file_name)).await?
-                }
-                e2e_yaml::Step::WaitDisplayed {
-                    selector,
-                    timeout,
-                    interval,
-                } => {
-                    let elem = driver
-                        .query(By::Css(selector))
-                        .wait(
-                            Duration::from_millis(*timeout),
-                            Duration::from_millis(*interval),
-                        )
-                        .single()
-                        .await?;
-                    elem.wait_until().displayed().await.map_err(|e| {
-                        WebDriverError::Timeout(format!("selector: {}, {}", selector, e))
-                    })?;
-                }
-                e2e_yaml::Step::AcceptAlert => {
-                    driver.accept_alert().await?;
-                }
-            }
+            step.run(&driver).await?;
         }
     }
 
