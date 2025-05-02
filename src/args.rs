@@ -7,7 +7,9 @@ impl std::error::Error for ParseArgsError {}
 
 impl std::fmt::Display for ParseArgsError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        todo!()
+        match self {
+            ParseArgsError::Unknown(s) => write!(f, "Unknown {}", s),
+        }
     }
 }
 
