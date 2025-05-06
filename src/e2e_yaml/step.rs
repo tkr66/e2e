@@ -1,6 +1,6 @@
+use std::fs;
 use std::path::Path;
 use std::time::Duration;
-use std::fs;
 
 use crate::e2e_yaml::Vars;
 use serde::Deserialize;
@@ -8,7 +8,7 @@ use thirtyfour::error::WebDriverError;
 use thirtyfour::extensions::query::*;
 use thirtyfour::By;
 
-use super::E2eYaml;
+use super::{parse_var_names, E2eYaml};
 
 #[derive(Debug, PartialEq, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -61,8 +61,7 @@ impl Step {
             Step::AcceptAlert => Step::AcceptAlert,
             Step::TaskRun { id, args } => {
                 if let Some(args) = args {
-                    let args: Vec<String> =
-                        args.iter().map(|arg| arg.replace(k, value)).collect();
+                    let args: Vec<String> = args.iter().map(|arg| arg.replace(k, value)).collect();
                     Step::TaskRun {
                         id: id.clone(),
                         args: Some(args),
@@ -79,82 +78,30 @@ impl Step {
 
     pub fn expand_vars(&self, vars: &Vars) -> Self {
         match self {
-            Step::Goto(url) => {
-                let mut s = url.clone();
-                for (k, v) in vars.0.iter() {
-                    let key = format!("{{{}}}", k);
-                    s = s.replace(key.as_str(), v);
-                }
-                Step::Goto(s)
-            }
-            Step::Click(selector) => {
-                let mut s = selector.clone();
-                for (k, v) in vars.0.iter() {
-                    let key = format!("{{{}}}", k);
-                    s = s.replace(key.as_str(), v);
-                }
-                Step::Click(s)
-            }
-            Step::Focus(selector) => {
-                let mut s = selector.clone();
-                for (k, v) in vars.0.iter() {
-                    let key = format!("{{{}}}", k);
-                    s = s.replace(key.as_str(), v);
-                }
-                Step::Focus(s)
-            }
-            Step::SendKeys { selector, value } => {
-                let mut sel = selector.clone();
-                let mut val = value.clone();
-                for (k, v) in vars.0.iter() {
-                    let key = format!("{{{}}}", k);
-                    sel = sel.replace(key.as_str(), v);
-                    val = val.replace(key.as_str(), v);
-                }
-                Step::SendKeys {
-                    selector: sel,
-                    value: val,
-                }
-            }
-            Step::ScreenShot(path) => {
-                let mut s = path.clone();
-                for (k, v) in vars.0.iter() {
-                    let key = format!("{{{}}}", k);
-                    s = s.replace(key.as_str(), v);
-                }
-                Step::ScreenShot(s)
-            }
+            Step::Goto(url) => Step::Goto(expand(url, vars)),
+            Step::Click(selector) => Step::Click(expand(selector, vars)),
+            Step::Focus(selector) => Step::Focus(expand(selector, vars)),
+            Step::SendKeys { selector, value } => Step::SendKeys {
+                selector: expand(selector, vars),
+                value: expand(value, vars),
+            },
+            Step::ScreenShot(path) => Step::ScreenShot(expand(path, vars)),
             Step::WaitDisplayed {
                 selector,
                 timeout,
                 interval,
-            } => {
-                let mut s = selector.clone();
-                for (k, v) in vars.0.iter() {
-                    let key = format!("{{{}}}", k);
-                    s = s.replace(key.as_str(), v);
-                }
-                Step::WaitDisplayed {
-                    selector: s,
-                    timeout: *timeout,
-                    interval: *interval,
-                }
-            }
+            } => Step::WaitDisplayed {
+                selector: expand(selector, vars),
+                timeout: *timeout,
+                interval: *interval,
+            },
             Step::AcceptAlert => Step::AcceptAlert,
             Step::TaskRun { id, args } => {
                 if let Some(args) = args {
-                    let mut expanded_args: Vec<String> = Vec::new();
-                    for arg in args {
-                        let mut expanded_arg = arg.clone();
-                        for (k, v) in vars.0.iter() {
-                            let key = format!("{{{}}}", k);
-                            expanded_arg = expanded_arg.replace(key.as_str(), v);
-                        }
-                        expanded_args.push(expanded_arg);
-                    }
+                    let expanded: Vec<String> = args.iter().map(|x| expand(x, vars)).collect();
                     Step::TaskRun {
                         id: id.clone(),
-                        args: Some(expanded_args),
+                        args: Some(expanded),
                     }
                 } else {
                     Step::TaskRun {
@@ -222,4 +169,19 @@ impl Step {
         }
         Ok(())
     }
+}
+
+fn expand(orig: &str, vars: &Vars) -> String {
+    let mut result = orig.to_string();
+    if let Some(names) = parse_var_names(orig) {
+        for name in names {
+            let key = format!("{{{}}}", name);
+            let value = vars
+                .0
+                .get(name.as_str())
+                .unwrap_or_else(|| panic!("variable '{}' is not defined", name));
+            result = result.replace(key.as_str(), value);
+        }
+    };
+    result
 }
