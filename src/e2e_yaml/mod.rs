@@ -3,10 +3,11 @@ use std::io::Read;
 use std::path::Path;
 
 use indexmap::IndexMap;
+use scenario::Scenarios;
 use serde::Deserialize;
-use step::Step;
 use task::Tasks;
 
+pub mod scenario;
 pub mod step;
 pub mod task;
 
@@ -36,15 +37,6 @@ pub struct Window {
 
 #[derive(Debug, Deserialize)]
 pub struct Vars(pub IndexMap<String, String>);
-
-#[derive(Debug, Deserialize)]
-pub struct Scenarios(pub IndexMap<String, Scenario>);
-
-#[derive(Debug, Deserialize)]
-pub struct Scenario {
-    pub name: String,
-    pub steps: Vec<Step>,
-}
 
 pub fn load_e2e_yaml_from_file<P: AsRef<Path>>(
     path: P,
@@ -97,6 +89,7 @@ pub fn parse_var_names(input: &str) -> Option<Vec<String>> {
 
 #[cfg(test)]
 mod tests {
+    use step::Step;
     use task::Task;
 
     use super::*;
