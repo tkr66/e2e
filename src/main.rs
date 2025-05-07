@@ -24,16 +24,8 @@ async fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
     let e2e_yaml = e2e_yaml::load_e2e_yaml_from_file(&args.file)?;
 
-    let mut caps = DesiredCapabilities::edge();
-    if e2e_yaml.driver.headless {
-        caps.set_headless()?;
-    }
-    let driver_url = format!("http://{}:{}", &e2e_yaml.driver.host, &e2e_yaml.driver.port);
-    let driver = WebDriver::new(driver_url, caps).await?;
-    let window = &e2e_yaml.driver.window;
-    driver
-        .set_window_rect(window.x, window.y, window.width, window.height)
-        .await?;
+    let driver = e2e_yaml.driver.initialize().await?;
+
     let scenarios = if let Some(names) = args.names {
         let names_ref: Vec<&str> = names.iter().map(|x| x.as_str()).collect();
         e2e_yaml.scenarios.find(&names_ref)?

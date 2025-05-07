@@ -2,11 +2,13 @@ use std::fs::File;
 use std::io::Read;
 use std::path::Path;
 
+use driver::Driver;
 use indexmap::IndexMap;
 use scenario::Scenarios;
 use serde::Deserialize;
 use task::Tasks;
 
+pub mod driver;
 pub mod scenario;
 pub mod step;
 pub mod task;
@@ -17,14 +19,6 @@ pub struct E2eYaml {
     pub vars: Vars,
     pub tasks: Tasks,
     pub scenarios: Scenarios,
-}
-
-#[derive(Debug, Deserialize)]
-pub struct Driver {
-    pub host: String,
-    pub port: String,
-    pub headless: bool,
-    pub window: Window,
 }
 
 #[derive(Debug, Deserialize)]
