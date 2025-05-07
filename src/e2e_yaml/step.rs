@@ -176,10 +176,7 @@ fn expand(orig: &str, vars: &Vars) -> String {
     if let Some(names) = parse_var_names(orig) {
         for name in names {
             let key = format!("{{{}}}", name);
-            let value = vars
-                .0
-                .get(name.as_str())
-                .unwrap_or_else(|| panic!("variable '{}' is not defined", name));
+            let value = vars.0.get(name.as_str()).unwrap_or(&key);
             result = result.replace(key.as_str(), value);
         }
     };
