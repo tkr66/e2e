@@ -1,0 +1,27 @@
+driver:
+  host: localhost
+  port: 4444
+  headless: true
+  window:
+    x: 0
+    y: 0
+    width: 1920
+    height: 1080
+
+vars:
+  root: https://github.com
+
+tasks:
+  open-repo:
+    arg_names:
+      - owner
+      - name
+    steps:
+      - !goto '{root}/{owner}/{name}'
+
+scenarios:
+  scenario1:
+    name: example
+    steps:
+      - !task_run { id: open-repo, args: [ tkr66, e2e ] }
+      - !screen_shot 'img/repo.png'
