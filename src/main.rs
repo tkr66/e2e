@@ -34,40 +34,21 @@ async fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
     driver
         .set_window_rect(window.x, window.y, window.width, window.height)
         .await?;
-    if let Some(names) = args.names {
-        names.iter().for_each(|n| {
-            if !e2e_yaml.scenarios.0.contains_key(n) {
-                panic!(
-                    "scenario '{}' is not defined in '{}'",
-                    n,
-                    args.file.to_str().unwrap()
-                );
-            }
-        });
-
-        for name in names {
-            let scenario = e2e_yaml.scenarios.0.get(&name).unwrap();
-            println!("running {}", scenario.name);
-            let steps: Vec<Step> = scenario
-                .steps
-                .iter()
-                .map(|s| s.expand_vars(&e2e_yaml.vars))
-                .collect();
-            for step in &steps {
-                step.run(&driver, &e2e_yaml).await?;
-            }
-        }
+    let scenarios = if let Some(names) = args.names {
+        let names_ref: Vec<&str> = names.iter().map(|x| x.as_str()).collect();
+        e2e_yaml.scenarios.find(&names_ref)?
     } else {
-        for scenario in e2e_yaml.scenarios.0.values() {
-            println!("running {}", scenario.name);
-            let steps: Vec<Step> = scenario
-                .steps
-                .iter()
-                .map(|s| s.expand_vars(&e2e_yaml.vars))
-                .collect();
-            for step in &steps {
-                step.run(&driver, &e2e_yaml).await?;
-            }
+        e2e_yaml.scenarios.0.values().collect()
+    };
+    for scenario in scenarios {
+        println!("running {}", scenario.name);
+        let steps: Vec<Step> = scenario
+            .steps
+            .iter()
+            .map(|s| s.expand_vars(&e2e_yaml.vars))
+            .collect();
+        for step in &steps {
+            step.run(&driver, &e2e_yaml).await?;
         }
     }
 
