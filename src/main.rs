@@ -2,7 +2,6 @@ use std::path::PathBuf;
 
 use clap::Parser;
 use e2e_yaml::step::Step;
-use thirtyfour::{ChromiumLikeCapabilities, DesiredCapabilities, WebDriver};
 
 mod e2e_yaml;
 
