@@ -83,7 +83,7 @@ pub fn parse_var_names(input: &str) -> Option<Vec<String>> {
 
 #[cfg(test)]
 mod tests {
-    use step::Step;
+    use step::{Step, ValueKind};
     use task::Task;
 
     use super::*;
@@ -135,6 +135,7 @@ scenarios:
       - !screen_shot '{img_out}/img0.png'
       - !wait_displayed { selector: '{css}', timeout: 3000, interval: 1000 }
       - !task_run { id: login, args: [ 'admin', 'password' ] }
+      - !assert_eq { kind: text, expected: abc, selector: '{css}' }
         ";
 
         let v: E2eYaml = serde_yaml::from_str(yaml).unwrap();
@@ -197,6 +198,7 @@ scenarios:
         let s5 = steps.get(4).unwrap();
         let s6 = steps.get(5).unwrap();
         let s7 = steps.get(6).unwrap();
+        let s8 = &steps[7];
         assert_eq!(
             Step::Goto("https://en.wikipedia.org/wiki/Main_Page".to_string()),
             *s1
@@ -228,6 +230,14 @@ scenarios:
                 args: Some(vec!["admin".to_string(), "password".to_string()]),
             },
             *s7
+        );
+        assert_eq!(
+            Step::AssertEq {
+                kind: ValueKind::Text,
+                expected: "abc".to_string(),
+                selector: "#id.class[attr=value]".to_string(),
+            },
+            *s8
         );
     }
 

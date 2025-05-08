@@ -10,6 +10,48 @@ use thirtyfour::By;
 
 use super::{parse_var_names, E2eYaml};
 
+pub struct StepError {
+    pub kind: StepErrorKind,
+}
+
+pub enum StepErrorKind {
+    WebDriverError(WebDriverError),
+    DirectoryCreateFailed(std::io::Error),
+    AssertFailed(String, String),
+}
+
+impl From<WebDriverError> for StepError {
+    fn from(err: WebDriverError) -> Self {
+        Self {
+            kind: StepErrorKind::WebDriverError(err),
+        }
+    }
+}
+
+impl From<std::io::Error> for StepError {
+    fn from(err: std::io::Error) -> Self {
+        Self {
+            kind: StepErrorKind::DirectoryCreateFailed(err),
+        }
+    }
+}
+
+impl std::fmt::Display for StepError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match &self.kind {
+            StepErrorKind::WebDriverError(e) => writeln!(f, "{}", e),
+            StepErrorKind::DirectoryCreateFailed(e) => writeln!(f, "{}", e),
+            StepErrorKind::AssertFailed(expected, actual) => {
+                writeln!(
+                    f,
+                    "\tassert failed. expected '{}', actual '{}'",
+                    expected, actual
+                )
+            }
+        }
+    }
+}
+
 #[derive(Debug, PartialEq, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Step {
@@ -31,6 +73,19 @@ pub enum Step {
         id: String,
         args: Option<Vec<String>>,
     },
+    AssertEq {
+        kind: ValueKind,
+        expected: String,
+        selector: String,
+    },
+}
+
+#[derive(Debug, PartialEq, Clone, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ValueKind {
+    Text,
+    Id,
+    Class,
 }
 
 impl Step {
@@ -73,6 +128,15 @@ impl Step {
                     }
                 }
             }
+            Step::AssertEq {
+                kind,
+                expected,
+                selector,
+            } => Step::AssertEq {
+                kind: kind.clone(),
+                expected: expected.replace(k, value),
+                selector: selector.replace(k, value),
+            },
         }
     }
 
@@ -110,6 +174,15 @@ impl Step {
                     }
                 }
             }
+            Step::AssertEq {
+                kind,
+                expected,
+                selector,
+            } => Step::AssertEq {
+                kind: kind.clone(),
+                expected: expand(expected, vars),
+                selector: expand(selector, vars),
+            },
         }
     }
 
@@ -117,7 +190,7 @@ impl Step {
         &self,
         driver: &thirtyfour::WebDriver,
         config: &E2eYaml,
-    ) -> Result<(), thirtyfour::error::WebDriverError> {
+    ) -> Result<(), StepError> {
         match self {
             Step::Goto(url) => driver.goto(url).await?,
             Step::Click(selector) => {
@@ -165,6 +238,23 @@ impl Step {
             Step::TaskRun { id, args } => {
                 let t = config.tasks.0.get(id).unwrap();
                 t.run(driver, config, args.as_ref()).await?;
+            }
+            Step::AssertEq {
+                kind,
+                expected,
+                selector,
+            } => {
+                let elem = driver.find(By::Css(selector)).await?;
+                let actual = match kind {
+                    ValueKind::Text => elem.text().await?,
+                    ValueKind::Id => elem.id().await?.unwrap_or("".to_string()),
+                    ValueKind::Class => elem.class_name().await?.unwrap_or("".to_string()),
+                };
+                if expected != &actual {
+                    return Err(StepError {
+                        kind: StepErrorKind::AssertFailed(expected.to_string(), actual),
+                    });
+                }
             }
         }
         Ok(())

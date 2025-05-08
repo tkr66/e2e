@@ -1,8 +1,11 @@
 use indexmap::IndexMap;
 use serde::Deserialize;
-use thirtyfour::{error::WebDriverError, WebDriver};
+use thirtyfour::WebDriver;
 
-use super::{step::Step, E2eYaml};
+use super::{
+    step::{Step, StepError},
+    E2eYaml,
+};
 
 #[derive(Debug, Deserialize)]
 pub struct Tasks(pub IndexMap<String, Task>);
@@ -19,7 +22,7 @@ impl Task {
         driver: &WebDriver,
         config: &E2eYaml,
         args: Option<&Vec<String>>,
-    ) -> Result<(), WebDriverError> {
+    ) -> Result<(), StepError> {
         let mut steps: Vec<Step> = Vec::new();
         for s in self.steps.iter() {
             let mut step = s.expand_vars(&config.vars);

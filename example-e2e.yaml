@@ -21,7 +21,15 @@ tasks:
 
 scenarios:
   scenario1:
-    name: example
+    name: should pass
     steps:
       - !task_run { id: open-repo, args: [ tkr66, e2e ] }
+      - !assert_eq { kind: text, expected: e2e, selector: 'strong[itemprop=name] > a' }
+      - !screen_shot 'img/repo.png'
+
+  scenario2:
+    name: should fail
+    steps:
+      - !task_run { id: open-repo, args: [ tkr66, e2e ] }
+      - !assert_eq { kind: text, expected: should fail, selector: 'strong[itemprop=name] > a' }
       - !screen_shot 'img/repo.png'
