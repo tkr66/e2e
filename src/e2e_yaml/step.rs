@@ -18,6 +18,7 @@ pub enum StepErrorKind {
     WebDriverError(WebDriverError),
     DirectoryCreateFailed(std::io::Error),
     AssertFailed(String, String),
+    TaskNotFound(String),
 }
 
 impl From<WebDriverError> for StepError {
@@ -47,6 +48,9 @@ impl std::fmt::Display for StepError {
                     "\tassert failed. expected '{}', actual '{}'",
                     expected, actual
                 )
+            }
+            StepErrorKind::TaskNotFound(id) => {
+                writeln!(f, "task with id '{}' not found in configuration", id)
             }
         }
     }
@@ -236,7 +240,14 @@ impl Step {
                 driver.accept_alert().await?;
             }
             Step::TaskRun { id, args } => {
-                let t = config.tasks.0.get(id).unwrap();
+                let t = match config.tasks.0.get(id) {
+                    Some(task) => task,
+                    None => {
+                        return Err(StepError {
+                            kind: StepErrorKind::TaskNotFound(id.to_string()),
+                        })
+                    }
+                };
                 let args: Option<Vec<&str>> = args
                     .as_ref()
                     .map(|x| x.iter().map(|y| y.as_str()).collect());
