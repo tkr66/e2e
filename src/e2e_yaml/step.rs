@@ -3,6 +3,7 @@ use std::path::Path;
 use std::time::Duration;
 
 use crate::e2e_yaml::Vars;
+use indexmap::IndexMap;
 use serde::Deserialize;
 use thirtyfour::error::WebDriverError;
 use thirtyfour::extensions::query::*;
@@ -241,7 +242,15 @@ impl Step {
                 driver.accept_alert().await?;
             }
             Step::TaskRun { id, args } => {
-                let t = match config.tasks.0.get(id) {
+                let tasks = match &config.tasks {
+                    Some(tasks) => tasks,
+                    None => {
+                        return Err(StepError {
+                            kind: StepErrorKind::TaskNotFound(id.to_string()),
+                        })
+                    }
+                };
+                let t = match tasks.0.get(id) {
                     Some(task) => task,
                     None => {
                         return Err(StepError {
@@ -249,13 +258,18 @@ impl Step {
                         })
                     }
                 };
+                let default_vars = Vars(IndexMap::new());
+                let default_vars = match &config.vars {
+                    Some(vars) => vars,
+                    None => &default_vars,
+                };
                 let args: Option<Vec<&str>> = args
                     .as_ref()
                     .map(|x| x.iter().map(|y| y.as_str()).collect());
                 let steps = t.expand_args(args.as_deref());
                 let steps: Vec<Step> = steps
                     .into_iter()
-                    .map(|x| x.expand_vars(&config.vars))
+                    .map(|x| x.expand_vars(default_vars))
                     .collect();
                 for ele in steps {
                     Box::pin(ele.run(driver, config)).await?;

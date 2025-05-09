@@ -17,8 +17,8 @@ pub mod var;
 #[derive(Debug, Deserialize)]
 pub struct E2eYaml {
     pub driver: Driver,
-    pub vars: Vars,
-    pub tasks: Tasks,
+    pub vars: Option<Vars>,
+    pub tasks: Option<Tasks>,
     pub scenarios: Scenarios,
 }
 
@@ -38,4 +38,31 @@ pub fn load_e2e_yaml_from_file<P: AsRef<Path>>(
     file.read_to_string(&mut contents)?;
     let config = serde_yaml::from_str(&contents)?;
     Ok(config)
+}
+
+#[cfg(test)]
+mod e2e_yaml_tests {
+    use super::*;
+
+    #[test]
+    fn test_minimal() {
+        let yaml = "
+driver:
+  host: localhost
+  port: 4444
+  headless: true
+  window:
+    x: 0
+    y: 0
+    width: 1920
+    height: 1080
+
+scenarios:
+  s1:
+    name: first
+    steps:
+      - !goto www.google.com
+";
+        let _: E2eYaml = serde_yaml::from_str(yaml).unwrap();
+    }
 }
