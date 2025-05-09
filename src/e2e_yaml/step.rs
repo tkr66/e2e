@@ -8,7 +8,8 @@ use thirtyfour::error::WebDriverError;
 use thirtyfour::extensions::query::*;
 use thirtyfour::By;
 
-use super::{parse_var_names, E2eYaml};
+use super::E2eYaml;
+use crate::e2e_yaml::var::parse_var_names;
 
 pub struct StepError {
     pub kind: StepErrorKind,
@@ -292,4 +293,73 @@ fn expand(orig: &str, vars: &Vars) -> String {
         }
     };
     result
+}
+
+#[cfg(test)]
+mod step_tests {
+    use indexmap::IndexMap;
+
+    use super::*;
+
+    #[test]
+    fn test_expand_vars() {
+        let yaml = "
+ - !goto '{url}'
+ - !click '{app}'
+ - !focus '{app}'
+ - !send_keys { selector: '{app}', value: '{app}' }
+ - !screen_shot '{app}'
+ - !wait_displayed { selector: '{app}', timeout: 3000, interval: 1000 }
+ - !task_run { id: login, args: [ 'admin', '{app}' ] }
+ - !assert_eq { kind: text, expected: '{app}', selector: '{app}' }
+";
+        let vars = Vars(IndexMap::from([
+            ("url".to_string(), "http://localhost".to_string()),
+            ("app".to_string(), "e2e".to_string()),
+        ]));
+        let steps: Vec<Step> = serde_yaml::from_str(yaml).unwrap();
+        let expanded_steps: Vec<Step> = steps.iter().map(|x| x.expand_vars(&vars)).collect();
+        let s1 = &expanded_steps[0];
+        let s2 = &expanded_steps[1];
+        let s3 = &expanded_steps[2];
+        let s4 = &expanded_steps[3];
+        let s5 = &expanded_steps[4];
+        let s6 = &expanded_steps[5];
+        let s7 = &expanded_steps[6];
+        let s8 = &expanded_steps[7];
+        assert_eq!(Step::Goto("http://localhost".to_string()), *s1);
+        assert_eq!(Step::Click("e2e".to_string()), *s2);
+        assert_eq!(Step::Focus("e2e".to_string()), *s3);
+        assert_eq!(
+            Step::SendKeys {
+                selector: "e2e".to_string(),
+                value: "e2e".to_string(),
+            },
+            *s4
+        );
+        assert_eq!(Step::ScreenShot("e2e".to_string()), *s5);
+        assert_eq!(
+            Step::WaitDisplayed {
+                selector: "e2e".to_string(),
+                timeout: 3000,
+                interval: 1000,
+            },
+            *s6
+        );
+        assert_eq!(
+            Step::TaskRun {
+                id: "login".to_string(),
+                args: Some(vec!["admin".to_string(), "e2e".to_string()]),
+            },
+            *s7
+        );
+        assert_eq!(
+            Step::AssertEq {
+                kind: ValueKind::Text,
+                expected: "e2e".to_string(),
+                selector: "e2e".to_string(),
+            },
+            *s8
+        );
+    }
 }

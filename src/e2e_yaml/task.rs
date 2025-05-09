@@ -112,6 +112,36 @@ mod task_tests {
     use super::*;
 
     #[test]
+    fn test_expand_args() {
+        let yaml = "
+login:
+  arg_names:
+    - selector
+    - value
+  steps:
+    - !send_keys { selector: '{selector}', value: '{value}' }
+    - !send_keys { selector: '{value}', value: '{selector}' }
+";
+        let tasks: Tasks = serde_yaml::from_str(yaml).unwrap();
+        let t1 = &tasks.0["login"];
+        let args = ["#input", "hello world"];
+        let expanded_t1 = t1.expand_args(Some(&args));
+        assert_eq!(
+            vec![
+                Step::SendKeys {
+                    selector: "#input".to_string(),
+                    value: "hello world".to_string(),
+                },
+                Step::SendKeys {
+                    selector: "hello world".to_string(),
+                    value: "#input".to_string(),
+                },
+            ],
+            expanded_t1
+        );
+    }
+
+    #[test]
     fn test_detect_mutual_dependencies() {
         let yaml = "
 x:

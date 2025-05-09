@@ -48,39 +48,50 @@ pub struct Scenario {
 }
 
 #[cfg(test)]
-mod scenario_test {
+mod scenario_tests {
+
     use super::*;
 
     #[test]
     fn test_find() {
-        let mut map: IndexMap<String, Scenario> = IndexMap::new();
-        let data: Vec<(&str, &str)> = vec![
-            ("id1", "name1"),
-            ("id2", "name2"),
-            ("id3", "name3"),
-            ("id4", "name4"),
-            ("id5", "name5"),
-        ];
-        for (id, name) in data {
-            map.insert(
-                id.to_string(),
-                Scenario {
-                    name: name.to_string(),
-                    steps: Vec::new(),
-                },
-            );
-        }
-        let scenarios = Scenarios(map);
+        let yaml = "
+id1:
+  name: name1
+  steps:
+    - !goto 'http://localhost'
+
+id2:
+  name: name2
+  steps:
+    - !goto 'http://localhost'
+
+id3:
+  name: name3
+  steps:
+    - !goto 'http://localhost'
+
+id4:
+  name: name4
+  steps:
+    - !goto 'http://localhost'
+
+id5:
+  name: name5
+  steps:
+    - !goto 'http://localhost'
+
+";
+        let scenarios: Scenarios = serde_yaml::from_str(yaml).unwrap();
         let id = vec!["id1", "id5"];
 
         let expected = [
             Scenario {
                 name: "name1".to_string(),
-                steps: Vec::new(),
+                steps: vec![Step::Goto("http://localhost".to_string())],
             },
             Scenario {
                 name: "name5".to_string(),
-                steps: Vec::new(),
+                steps: vec![Step::Goto("http://localhost".to_string())],
             },
         ];
         let actual = scenarios.find(id.as_slice()).unwrap();
@@ -91,24 +102,34 @@ mod scenario_test {
 
     #[test]
     fn test_find_not_found() {
-        let mut map: IndexMap<String, Scenario> = IndexMap::new();
-        let data: Vec<(&str, &str)> = vec![
-            ("id1", "name1"),
-            ("id2", "name2"),
-            ("id3", "name3"),
-            ("id4", "name4"),
-            ("id5", "name5"),
-        ];
-        for (id, name) in data {
-            map.insert(
-                id.to_string(),
-                Scenario {
-                    name: name.to_string(),
-                    steps: Vec::new(),
-                },
-            );
-        }
-        let scenarios = Scenarios(map);
+        let yaml = "
+id1:
+  name: name1
+  steps:
+    - !goto 'http://localhost'
+
+id2:
+  name: name2
+  steps:
+    - !goto 'http://localhost'
+
+id3:
+  name: name3
+  steps:
+    - !goto 'http://localhost'
+
+id4:
+  name: name4
+  steps:
+    - !goto 'http://localhost'
+
+id5:
+  name: name5
+  steps:
+    - !goto 'http://localhost'
+
+";
+        let scenarios: Scenarios = serde_yaml::from_str(yaml).unwrap();
         let id = vec!["id6"];
 
         let actual = scenarios.find(id.as_slice());
