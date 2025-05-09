@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::{path::PathBuf, process};
 
 use clap::Parser;
 use e2e_yaml::step::Step;
@@ -23,7 +23,10 @@ async fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
     let e2e_yaml = e2e_yaml::load_e2e_yaml_from_file(&args.file)?;
 
-    let driver = e2e_yaml.driver.initialize().await?;
+    if let Err(e) = e2e_yaml.tasks.detect_circular_dependencies() {
+        eprintln!("{}", e);
+        process::exit(1);
+    }
 
     let scenarios = if let Some(names) = args.names {
         let names_ref: Vec<&str> = names.iter().map(|x| x.as_str()).collect();
@@ -31,6 +34,8 @@ async fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
     } else {
         e2e_yaml.scenarios.0.values().collect()
     };
+
+    let driver = e2e_yaml.driver.initialize().await?;
     for scenario in scenarios {
         println!("running {}", scenario.name);
         let steps: Vec<Step> = scenario
