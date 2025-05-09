@@ -1,11 +1,7 @@
 use indexmap::IndexMap;
 use serde::Deserialize;
-use thirtyfour::WebDriver;
 
-use super::{
-    step::{Step, StepError},
-    E2eYaml,
-};
+use super::step::Step;
 
 #[derive(Debug, Deserialize)]
 pub struct Tasks(pub IndexMap<String, Task>);
@@ -17,28 +13,17 @@ pub struct Task {
 }
 
 impl Task {
-    pub async fn run(
-        &self,
-        driver: &WebDriver,
-        config: &E2eYaml,
-        args: Option<&Vec<String>>,
-    ) -> Result<(), StepError> {
-        let mut steps: Vec<Step> = Vec::new();
-        for s in self.steps.iter() {
-            let mut step = s.expand_vars(&config.vars);
-            if let Some(args) = args {
-                for i in 0..self.arg_names.as_ref().unwrap().len() {
-                    let arg_name = self.arg_names.as_ref().unwrap().get(i).unwrap();
-                    let arg = args.get(i).unwrap();
-                    step = step.expand_var(arg_name.as_str(), arg.as_str());
-                }
+    pub fn expand_args(&self, args: Option<&[&str]>) -> Vec<Step> {
+        let mut result: Vec<Step> = Vec::new();
+        for step in &self.steps {
+            let mut cloned = step.clone();
+            if let Some(names) = &self.arg_names {
+                (0..names.len()).for_each(|i| {
+                    cloned = cloned.expand_var(names[i].as_str(), args.unwrap()[i]);
+                });
             }
-            steps.push(step);
+            result.push(cloned);
         }
-        for s in steps {
-            Box::pin(s.run(driver, config)).await?;
-        }
-
-        Ok(())
+        result
     }
 }

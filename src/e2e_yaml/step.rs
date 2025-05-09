@@ -52,7 +52,7 @@ impl std::fmt::Display for StepError {
     }
 }
 
-#[derive(Debug, PartialEq, Deserialize)]
+#[derive(Debug, PartialEq, Clone, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Step {
     Goto(String),
@@ -237,7 +237,17 @@ impl Step {
             }
             Step::TaskRun { id, args } => {
                 let t = config.tasks.0.get(id).unwrap();
-                t.run(driver, config, args.as_ref()).await?;
+                let args: Option<Vec<&str>> = args
+                    .as_ref()
+                    .map(|x| x.iter().map(|y| y.as_str()).collect());
+                let steps = t.expand_args(args.as_deref());
+                let steps: Vec<Step> = steps
+                    .into_iter()
+                    .map(|x| x.expand_vars(&config.vars))
+                    .collect();
+                for ele in steps {
+                    Box::pin(ele.run(driver, config)).await?;
+                }
             }
             Step::AssertEq {
                 kind,

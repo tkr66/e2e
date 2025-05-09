@@ -124,6 +124,13 @@ tasks:
     steps:
       - !goto 'a'
 
+  arg_and_var:
+    arg_names:
+      - name
+      - password
+    steps:
+      - !goto '{domain}/{name}/{word}/{password}'
+
 scenarios:
   scenario1:
     name: index
@@ -159,6 +166,7 @@ scenarios:
 
         let t1 = v.tasks.0.get("login").unwrap();
         let t2 = v.tasks.0.get("login2").unwrap();
+        let t3 = v.tasks.0.get("arg_and_var").unwrap();
         assert_eq!(
             Task {
                 arg_names: Some(vec!["name".to_string(), "password".to_string()]),
@@ -184,6 +192,26 @@ scenarios:
             },
             *t2
         );
+        assert_eq!(
+            Task {
+                arg_names: Some(vec!["name".to_string(), "password".to_string()]),
+                steps: vec![Step::Goto("{domain}/{name}/{word}/{password}".to_string()),]
+            },
+            *t3
+        );
+        {
+            let args = ["John", "password!"];
+            let steps = t3.expand_args(Some(&args));
+            assert_eq!(
+                vec![Step::Goto("{domain}/John/{word}/password!".to_string())],
+                steps
+            );
+            let s1 = &steps[0].expand_vars(&v.vars);
+            assert_eq!(
+                Step::Goto("en.wikipedia.org/John/hello world/password!".to_string()),
+                *s1
+            );
+        }
 
         let scenario1 = v.scenarios.0.get("scenario1").unwrap();
         let steps: Vec<Step> = scenario1
