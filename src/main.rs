@@ -1,23 +1,12 @@
-use std::{path::PathBuf, process};
+use std::process;
 
 use clap::Parser;
+use cli::Args;
 use e2e_yaml::{step::Step, task::Tasks, var::Vars};
 use indexmap::IndexMap;
 
+mod cli;
 mod e2e_yaml;
-
-#[derive(Parser, Debug)]
-#[command(version, about, long_about = None)]
-struct Args {
-    /// Optional list of scenario names to execute.
-    /// If not provided, all scenarios will be run.
-    #[arg(num_args = 1..)]
-    names: Option<Vec<String>>,
-
-    /// Path to the e2e_yaml configuration file.
-    #[arg(short, long, default_value = "e2e.yaml")]
-    file: PathBuf,
-}
 
 #[tokio::main]
 async fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
