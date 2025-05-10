@@ -1,6 +1,7 @@
 use super::step::Step;
 use indexmap::IndexMap;
 use serde::Deserialize;
+use serde::Serialize;
 
 #[derive(Debug, PartialEq)]
 pub struct ScenarioError {
@@ -22,7 +23,7 @@ pub enum ScenarioErrorKind {
     NotFound,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct Scenarios(pub IndexMap<String, Scenario>);
 
 impl Scenarios {
@@ -41,7 +42,7 @@ impl Scenarios {
     }
 }
 
-#[derive(Debug, PartialEq, Deserialize)]
+#[derive(Debug, PartialEq, Deserialize, Serialize)]
 pub struct Scenario {
     pub name: String,
     pub steps: Vec<Step>,

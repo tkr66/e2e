@@ -1,9 +1,10 @@
 use serde::Deserialize;
+use serde::Serialize;
 use thirtyfour::{ChromiumLikeCapabilities, DesiredCapabilities, WebDriver};
 
 use super::Window;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct Driver {
     pub host: String,
     pub port: String,

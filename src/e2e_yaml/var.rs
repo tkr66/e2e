@@ -1,7 +1,8 @@
 use indexmap::IndexMap;
 use serde::Deserialize;
+use serde::Serialize;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct Vars(pub IndexMap<String, String>);
 
 pub fn parse_var_names(input: &str) -> Option<Vec<String>> {

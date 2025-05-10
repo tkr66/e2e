@@ -55,7 +55,7 @@ async fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
             driver.quit().await?;
         }
         cli::Cmd::Config(_) => {
-            unimplemented!();
+            println!("{}", serde_yaml::to_string(&e2e_yaml).unwrap());
         }
     }
 

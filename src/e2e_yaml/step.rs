@@ -5,6 +5,7 @@ use std::time::Duration;
 use crate::e2e_yaml::Vars;
 use indexmap::IndexMap;
 use serde::Deserialize;
+use serde::Serialize;
 use thirtyfour::error::WebDriverError;
 use thirtyfour::extensions::query::*;
 use thirtyfour::By;
@@ -58,7 +59,7 @@ impl std::fmt::Display for StepError {
     }
 }
 
-#[derive(Debug, PartialEq, Clone, Deserialize)]
+#[derive(Debug, PartialEq, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Step {
     Goto(String),
@@ -86,7 +87,7 @@ pub enum Step {
     },
 }
 
-#[derive(Debug, PartialEq, Clone, Deserialize)]
+#[derive(Debug, PartialEq, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum ValueKind {
     Text,

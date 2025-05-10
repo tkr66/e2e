@@ -1,5 +1,6 @@
 use indexmap::{IndexMap, IndexSet};
 use serde::Deserialize;
+use serde::Serialize;
 
 use super::step::Step;
 
@@ -29,7 +30,7 @@ impl std::fmt::Display for TaskError {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct Tasks(pub IndexMap<String, Task>);
 
 impl Tasks {
@@ -70,7 +71,7 @@ impl Tasks {
     }
 }
 
-#[derive(Debug, PartialEq, Deserialize)]
+#[derive(Debug, PartialEq, Deserialize, Serialize)]
 pub struct Task {
     pub arg_names: Option<Vec<String>>,
     pub steps: Vec<Step>,

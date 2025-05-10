@@ -5,6 +5,7 @@ use std::path::Path;
 use driver::Driver;
 use scenario::Scenarios;
 use serde::Deserialize;
+use serde::Serialize;
 use task::Tasks;
 use var::Vars;
 
@@ -14,7 +15,7 @@ pub mod step;
 pub mod task;
 pub mod var;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct E2eYaml {
     pub driver: Driver,
     pub vars: Option<Vars>,
@@ -22,7 +23,7 @@ pub struct E2eYaml {
     pub scenarios: Scenarios,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct Window {
     pub x: i64,
     pub y: i64,
