@@ -10,6 +10,7 @@ driver:
 
 vars:
   root: https://github.com
+  repo-name-css: 'strong[itemprop=name] > a'
 
 tasks:
   open-repo:
@@ -24,12 +25,12 @@ scenarios:
     name: should pass
     steps:
       - !task_run { id: open-repo, args: [ tkr66, e2e ] }
-      - !assert_eq { kind: text, expected: e2e, selector: 'strong[itemprop=name] > a' }
+      - !assert_eq { kind: text, expected: e2e, selector: '{repo-name-css}' }
       - !screen_shot 'img/repo.png'
 
   scenario2:
     name: should fail
     steps:
       - !task_run { id: open-repo, args: [ tkr66, e2e ] }
-      - !assert_eq { kind: text, expected: should fail, selector: 'strong[itemprop=name] > a' }
+      - !assert_eq { kind: text, expected: should fail, selector: '{repo-name-css}' }
       - !screen_shot 'img/repo.png'
