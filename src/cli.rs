@@ -46,8 +46,20 @@ impl Cmd {
                 }
                 driver.quit().await?;
             }
-            Cmd::Config(_) => {
-                println!("{}", serde_yaml::to_string(&e2e_yaml).unwrap());
+            Cmd::Config(args) => {
+                let s = if let Some(key) = &args.key {
+                    match key {
+                        ConfigSection::Driver => serde_yaml::to_string(&e2e_yaml.driver).unwrap(),
+                        ConfigSection::Vars => serde_yaml::to_string(&e2e_yaml.vars).unwrap(),
+                        ConfigSection::Tasks => serde_yaml::to_string(&e2e_yaml.tasks).unwrap(),
+                        ConfigSection::Scenarios => {
+                            serde_yaml::to_string(&e2e_yaml.scenarios).unwrap()
+                        }
+                    }
+                } else {
+                    serde_yaml::to_string(&e2e_yaml).unwrap()
+                };
+                println!("{s}");
             }
         }
 
