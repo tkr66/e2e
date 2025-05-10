@@ -1,6 +1,8 @@
 use std::path::PathBuf;
 
 use clap::{Parser, Subcommand, ValueEnum};
+
+use crate::e2e_yaml::E2eYaml;
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 pub struct Args {
@@ -19,6 +21,38 @@ pub enum Cmd {
 
     /// Print parsed e2e-yaml file
     Config(ConfigArgs),
+}
+
+impl Cmd {
+    pub async fn run(&self, e2e_yaml: E2eYaml) -> Result<(), Box<dyn std::error::Error>> {
+        match self {
+            Cmd::Run(args) => {
+                let scenarios = if let Some(names) = &args.names {
+                    let names_ref: Vec<&str> = names.iter().map(|x| x.as_str()).collect();
+                    e2e_yaml.scenarios.find(&names_ref)?
+                } else {
+                    e2e_yaml.scenarios.0.values().collect()
+                };
+
+                let driver = e2e_yaml.driver.initialize().await?;
+                for scenario in scenarios {
+                    println!("running {}", scenario.name);
+                    for step in &scenario.steps {
+                        if let Err(err) = step.run(&driver, &e2e_yaml).await {
+                            eprintln!("{}", err);
+                            break;
+                        };
+                    }
+                }
+                driver.quit().await?;
+            }
+            Cmd::Config(_) => {
+                println!("{}", serde_yaml::to_string(&e2e_yaml).unwrap());
+            }
+        }
+
+        Ok(())
+    }
 }
 
 #[derive(Parser, PartialEq, Debug)]

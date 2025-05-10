@@ -21,32 +21,7 @@ async fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
         process::exit(1);
     }
 
-    match &args.cmd {
-        cli::Cmd::Run(args) => {
-            let scenarios = if let Some(names) = &args.names {
-                let names_ref: Vec<&str> = names.iter().map(|x| x.as_str()).collect();
-                e2e_yaml.scenarios.find(&names_ref)?
-            } else {
-                e2e_yaml.scenarios.0.values().collect()
-            };
-
-            let driver = e2e_yaml.driver.initialize().await?;
-            for scenario in scenarios {
-                println!("running {}", scenario.name);
-                for step in &scenario.steps {
-                    if let Err(err) = step.run(&driver, &e2e_yaml).await {
-                        eprintln!("{}", err);
-                        break;
-                    };
-                }
-            }
-
-            driver.quit().await?;
-        }
-        cli::Cmd::Config(_) => {
-            println!("{}", serde_yaml::to_string(&e2e_yaml).unwrap());
-        }
-    }
+    args.cmd.run(e2e_yaml).await?;
 
     Ok(())
 }
