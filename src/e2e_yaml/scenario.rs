@@ -23,7 +23,7 @@ pub enum ScenarioErrorKind {
     NotFound,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, PartialEq, Deserialize, Serialize)]
 pub struct Scenarios(pub IndexMap<String, Scenario>);
 
 impl Scenarios {
