@@ -22,35 +22,42 @@ async fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
         process::exit(1);
     }
 
-    let scenarios = if let Some(names) = args.names {
-        let names_ref: Vec<&str> = names.iter().map(|x| x.as_str()).collect();
-        e2e_yaml.scenarios.find(&names_ref)?
-    } else {
-        e2e_yaml.scenarios.0.values().collect()
-    };
-
-    let default_vars = Vars(IndexMap::new());
-    let default_vars = match &e2e_yaml.vars {
-        Some(v) => v,
-        None => &default_vars,
-    };
-    let driver = e2e_yaml.driver.initialize().await?;
-    for scenario in scenarios {
-        println!("running {}", scenario.name);
-        let steps: Vec<Step> = scenario
-            .steps
-            .iter()
-            .map(|s| s.expand_vars(default_vars))
-            .collect();
-        for step in &steps {
-            if let Err(err) = step.run(&driver, &e2e_yaml).await {
-                eprintln!("{}", err);
-                break;
+    match &args.cmd {
+        cli::Cmd::Run(args) => {
+            let scenarios = if let Some(names) = &args.names {
+                let names_ref: Vec<&str> = names.iter().map(|x| x.as_str()).collect();
+                e2e_yaml.scenarios.find(&names_ref)?
+            } else {
+                e2e_yaml.scenarios.0.values().collect()
             };
+
+            let default_vars = Vars(IndexMap::new());
+            let default_vars = match &e2e_yaml.vars {
+                Some(v) => v,
+                None => &default_vars,
+            };
+            let driver = e2e_yaml.driver.initialize().await?;
+            for scenario in scenarios {
+                println!("running {}", scenario.name);
+                let steps: Vec<Step> = scenario
+                    .steps
+                    .iter()
+                    .map(|s| s.expand_vars(default_vars))
+                    .collect();
+                for step in &steps {
+                    if let Err(err) = step.run(&driver, &e2e_yaml).await {
+                        eprintln!("{}", err);
+                        break;
+                    };
+                }
+            }
+
+            driver.quit().await?;
+        }
+        cli::Cmd::Config(_) => {
+            unimplemented!();
         }
     }
-
-    driver.quit().await?;
 
     Ok(())
 }
