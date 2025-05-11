@@ -24,7 +24,8 @@ pub enum Cmd {
 }
 
 impl Cmd {
-    pub async fn run(&self, e2e_yaml: E2eYaml) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn run(&self, e2e_yaml: E2eYaml) -> Result<u8, Box<dyn std::error::Error>> {
+        let mut step_err = false;
         match self {
             Cmd::Run(args) => {
                 let scenarios = if let Some(names) = &args.names {
@@ -40,6 +41,7 @@ impl Cmd {
                     for step in &scenario.steps {
                         if let Err(err) = step.run(&driver, &e2e_yaml).await {
                             eprintln!("{}", err);
+                            step_err = true;
                             break;
                         };
                     }
@@ -63,7 +65,7 @@ impl Cmd {
             }
         }
 
-        Ok(())
+        Ok(step_err.into())
     }
 }
 

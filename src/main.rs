@@ -1,4 +1,4 @@
-use std::process;
+use std::process::{self, ExitCode};
 
 use clap::Parser;
 use cli::Args;
@@ -8,7 +8,7 @@ mod cli;
 mod e2e_yaml;
 
 #[tokio::main]
-async fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
+async fn main() -> std::result::Result<ExitCode, Box<dyn std::error::Error>> {
     let args = Args::parse();
     let e2e_yaml = e2e_yaml::load_e2e_yaml_from_file(&args.file)?.expand();
 
@@ -21,7 +21,7 @@ async fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
         process::exit(1);
     }
 
-    args.cmd.run(e2e_yaml).await?;
+    let exit_code = args.cmd.run(e2e_yaml).await?;
 
-    Ok(())
+    Ok(ExitCode::from(exit_code))
 }
